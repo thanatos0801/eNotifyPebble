@@ -1,0 +1,70 @@
+{
+    "appKeys": {},
+    "longName": "eNotify",
+    "capabilities": [
+        ""
+    ],
+    "versionLabel": "2.0.0",
+    "companyName": "Verietas Software",
+    "resources": {
+        "media": [
+            {
+                "file": "images/icon_white.png",
+                "type": "png",
+                "name": "ICON_WHITE",
+                "menuIcon": true
+            },
+            {
+                "file": "images/icon.png",
+                "type": "png",
+                "name": "ICON"
+            },
+            {
+                "file": "images/bubble.png",
+                "type": "png-trans",
+                "name": "BUBBLE"
+            },
+            {
+                "file": "images/question.png",
+                "type": "png-trans",
+                "name": "QUESTION"
+            },
+            {
+                "file": "images/open.png",
+                "type": "png-trans",
+                "name": "OPEN"
+            },
+            {
+                "file": "images/reply2.png",
+                "type": "png-trans",
+                "name": "REPLY_2"
+            },
+            {
+                "file": "images/reply1.png",
+                "type": "png-trans",
+                "name": "REPLY_1"
+            },
+            {
+                "file": "images/trash.png",
+                "type": "png-trans",
+                "name": "TRASH"
+            },
+            {
+                "file": "images/down_arrow.png",
+                "type": "png-trans",
+                "name": "DOWN_ARROW"
+            },
+            {
+                "file": "images/up_arrow.png",
+                "type": "png-trans",
+                "name": "UP_ARROW"
+            }
+        ]
+    },
+    "watchapp": {
+        "watchface": false
+    },
+    "uuid": "54d3118f-3346-462c-995c-0d0b4e01148c",
+    "shortName": "eNotify",
+    "versionCode": 2
+}
