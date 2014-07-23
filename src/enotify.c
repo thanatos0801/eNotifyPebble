@@ -20,6 +20,7 @@ static BitmapLayer *header_bubble_layer[MAX_MESSAGES];
 static TextLayer *header_text_layer[MAX_MESSAGES];
 static TextLayer *from_text_layer[MAX_MESSAGES];
 static TextLayer *subject_text_layer[MAX_MESSAGES];
+static TextLayer *footer_text_layer[MAX_MESSAGES];
 static TextLayer *deleteConfirmLayer;
 static BitmapLayer *trashImageLayer;
 static BitmapLayer *questionImageLayer;
@@ -56,6 +57,7 @@ static char scroll_text[MAX_MESSAGES][MAX_TEXT_LENGTH];
 static char from_text[MAX_MESSAGES][MAX_TEXT_LENGTH];
 static char subject_text[MAX_MESSAGES][MAX_TEXT_LENGTH];
 static char uuid_text[MAX_MESSAGES][MAX_TEXT_LENGTH];
+static char footer_text[MAX_MESSAGES][MAX_TEXT_LENGTH];
 
 typedef struct app_data_t
 {
@@ -141,6 +143,8 @@ void refresh_screen() {
       {
         APP_LOG(APP_LOG_LEVEL_DEBUG, "Updating UI index %d with data from %d...",writeIndex,iterator);
 
+        snprintf(footer_text[iterator],MAX_TEXT_LENGTH,"%d / %d",writeIndex+1,app_metadata.num_messages_filled);
+        
         time_t emailTime = header_time[iterator];
         time_t now = time(NULL)-app_metadata.utc_offset;
      
@@ -173,6 +177,7 @@ void refresh_screen() {
         text_layer_set_text(subject_text_layer[writeIndex],subject_text[iterator]);
         text_layer_set_text(text_layer[writeIndex],scroll_text[iterator]);
         text_layer_set_text(header_text_layer[writeIndex], header_text[iterator]);
+        text_layer_set_text(footer_text_layer[writeIndex], footer_text[iterator]);
 
         if( deleted[iterator] )
           bitmap_layer_set_bitmap(header_bubble_layer[writeIndex], deleted_bubble);
@@ -190,6 +195,9 @@ void refresh_screen() {
       int8_t writeIndex = 0;
       for( int8_t i = app_metadata.num_messages_filled-1; i >= 0; i-- )
       {
+        snprintf(footer_text[i],MAX_TEXT_LENGTH,"%d / %d",writeIndex+1,app_metadata.num_messages_filled);
+
+
         time_t emailTime = header_time[i];
         time_t now = time(NULL)-app_metadata.utc_offset;
      
@@ -222,6 +230,8 @@ void refresh_screen() {
         text_layer_set_text(subject_text_layer[writeIndex],subject_text[i]);
         text_layer_set_text(text_layer[writeIndex],scroll_text[i]);
         text_layer_set_text(header_text_layer[writeIndex], header_text[i]);
+        text_layer_set_text(footer_text_layer[writeIndex], footer_text[i]);
+
         if( deleted[i] )
           bitmap_layer_set_bitmap(header_bubble_layer[writeIndex], deleted_bubble);
         else
@@ -961,11 +971,12 @@ static void do_init(void) {
 
   for( int i = 0; i < MAX_MESSAGES; i++ )
   {
-    GRect textBounds = GRect(2,(i*bounds.size.h)+62,bounds.size.w-ACTION_BAR_WIDTH-5,bounds.size.h-18-46);
+    GRect textBounds = GRect(2,(i*bounds.size.h)+62,bounds.size.w-ACTION_BAR_WIDTH-5,bounds.size.h-18-46-20);
     GRect headerImageBounds = GRect(20,(i*bounds.size.h)+2,14,14);
     GRect headerLabelBounds = GRect(40,(i*bounds.size.h),bounds.size.w-50-5,18);
     GRect fromLabelBounds = GRect(2,(i*bounds.size.h)+16,bounds.size.w-ACTION_BAR_WIDTH-5,16);
     GRect subjectLabelBounds = GRect(2,(i*bounds.size.h)+32,bounds.size.w-ACTION_BAR_WIDTH-5,30);
+    GRect footerBounds = GRect(2,(i*bounds.size.h)+62+textBounds.size.h,bounds.size.w-ACTION_BAR_WIDTH-5,30);
     
     text_layer[i] = text_layer_create(textBounds);
     layer_set_clips(text_layer_get_layer(text_layer[i]), true);
@@ -978,6 +989,13 @@ static void do_init(void) {
     text_layer_set_background_color(header_text_layer[i], GColorClear);
     text_layer_set_text(header_text_layer[i], "Just Now");
     layer_set_clips(text_layer_get_layer(header_text_layer[i]), false);
+    
+    footer_text_layer[i] = text_layer_create(footerBounds);
+    text_layer_set_font(footer_text_layer[i], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+    text_layer_set_background_color(footer_text_layer[i], GColorClear);
+    text_layer_set_text(footer_text_layer[i], "Empty");
+    text_layer_set_text_alignment(footer_text_layer[i], GTextAlignmentCenter);
+    layer_set_clips(text_layer_get_layer(footer_text_layer[i]), false);
 
     from_text_layer[i] = text_layer_create(fromLabelBounds);
     text_layer_set_font(from_text_layer[i], fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
@@ -1002,7 +1020,8 @@ static void do_init(void) {
     scroll_layer_add_child(scroll_layer, text_layer_get_layer(header_text_layer[i]));
     scroll_layer_add_child(scroll_layer, bitmap_layer_get_layer(header_bubble_layer[i]));
     scroll_layer_add_child(scroll_layer, text_layer_get_layer(from_text_layer[i]));
-    scroll_layer_add_child(scroll_layer, text_layer_get_layer(subject_text_layer[i]));    
+    scroll_layer_add_child(scroll_layer, text_layer_get_layer(subject_text_layer[i]));   
+    scroll_layer_add_child(scroll_layer, text_layer_get_layer(footer_text_layer[i]));
   }
 
   refresh_screen();
@@ -1131,6 +1150,7 @@ static void do_deinit(void) {
     bitmap_layer_destroy(header_bubble_layer[i]);
     text_layer_destroy(from_text_layer[i]);
     text_layer_destroy(subject_text_layer[i]);
+    text_layer_destroy(footer_text_layer[i]);
   }
   window_destroy(window);
 }
