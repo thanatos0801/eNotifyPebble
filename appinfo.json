@@ -1,70 +1,76 @@
 {
     "appKeys": {},
-    "longName": "eNotify",
     "capabilities": [
         ""
     ],
-    "versionLabel": "2.0.0",
     "companyName": "Verietas Software",
+    "longName": "eNotify",
+    "projectType": "native",
     "resources": {
         "media": [
             {
+                "file": "images/deleted.png",
+                "name": "DELETED",
+                "type": "png-trans"
+            },
+            {
                 "file": "images/icon_white.png",
-                "type": "png",
+                "menuIcon": true,
                 "name": "ICON_WHITE",
-                "menuIcon": true
+                "type": "png"
             },
             {
                 "file": "images/icon.png",
-                "type": "png",
-                "name": "ICON"
+                "name": "ICON",
+                "type": "png"
             },
             {
                 "file": "images/bubble.png",
-                "type": "png-trans",
-                "name": "BUBBLE"
+                "name": "BUBBLE",
+                "type": "png-trans"
             },
             {
                 "file": "images/question.png",
-                "type": "png-trans",
-                "name": "QUESTION"
+                "name": "QUESTION",
+                "type": "png-trans"
             },
             {
                 "file": "images/open.png",
-                "type": "png-trans",
-                "name": "OPEN"
+                "name": "OPEN",
+                "type": "png-trans"
             },
             {
                 "file": "images/reply2.png",
-                "type": "png-trans",
-                "name": "REPLY_2"
+                "name": "REPLY_2",
+                "type": "png-trans"
             },
             {
                 "file": "images/reply1.png",
-                "type": "png-trans",
-                "name": "REPLY_1"
+                "name": "REPLY_1",
+                "type": "png-trans"
             },
             {
                 "file": "images/trash.png",
-                "type": "png-trans",
-                "name": "TRASH"
+                "name": "TRASH",
+                "type": "png-trans"
             },
             {
                 "file": "images/down_arrow.png",
-                "type": "png-trans",
-                "name": "DOWN_ARROW"
+                "name": "DOWN_ARROW",
+                "type": "png-trans"
             },
             {
                 "file": "images/up_arrow.png",
-                "type": "png-trans",
-                "name": "UP_ARROW"
+                "name": "UP_ARROW",
+                "type": "png-trans"
             }
         ]
     },
+    "shortName": "eNotify",
+    "uuid": "54d3118f-3346-462c-995c-0d0b4e01148c",
+    "versionCode": 2,
+    "versionLabel": "2.0.0",
     "watchapp": {
         "watchface": false
-    },
-    "uuid": "54d3118f-3346-462c-995c-0d0b4e01148c",
-    "shortName": "eNotify",
-    "versionCode": 2
+    }
 }
