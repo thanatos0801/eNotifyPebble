@@ -1,6 +1,7 @@
 // Standard includes
 #include "pebble.h"
-
+#include "animated_ab.h"
+  
 #define MAX_MESSAGES 5
 #define MAX_TEXT_LENGTH 124
 #define MAX_UUID_LENGTH 50
@@ -38,6 +39,13 @@ static GBitmap* deleted_bubble;
 
 // The mode defines what the action bar commands will be and is one of ModeType
 static uint8_t mode;
+
+static uint8_t actions_enabled;
+static uint8_t retries;
+static int msg_cmd;
+static int msg_account;
+static char msg_uuid[MAX_TEXT_LENGTH];
+static int msg_send_index;
 
 // Lorum ipsum to have something to scroll
 static int32_t header_time[MAX_MESSAGES];
@@ -117,147 +125,6 @@ void reschedule_kill_timer() {
   light_enable_interaction();
   if( kill_timer != NULL )
     app_timer_reschedule(kill_timer, 30*1000);
-}
-
-void persist_messages(int8_t index)
-{
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting current messages for index %d...",index);
-  message_1_t msg1;
-  message_2_t msg2;
-  
-  strcpy(msg1.scroll_text,"");
-  strcpy(msg2.from_text,"");
-  strcpy(msg2.subject_text,"");
-  strcpy(msg1.uuid_text,"");
-  
-  if( index == -1 || index == 0 )
-  {
-    strcpy(msg1.scroll_text,scroll_text[0]);
-    msg1.header_time = header_time[0];
-    strcpy(msg2.from_text,from_text[0]);
-    strcpy(msg2.subject_text,subject_text[0]);
-    strcpy(msg1.uuid_text,uuid_text[0]);
-    msg1.account_id = account_id[0];
-    msg1.deleted = deleted[0];
-    persist_write_data(0x10, &msg1, sizeof(message_1_t));
-    persist_write_data(0x11, &msg2, sizeof(message_2_t));
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
-  }
-  
-  if( index == -1 || index == 1 )
-  {
-    strcpy(msg1.scroll_text,scroll_text[1]);
-    msg1.header_time = header_time[1];
-    strcpy(msg2.from_text,from_text[1]);
-    strcpy(msg2.subject_text,subject_text[1]);
-    strcpy(msg1.uuid_text,uuid_text[1]);
-    msg1.account_id = account_id[1];
-    msg1.deleted = deleted[1];
-    persist_write_data(0x20, &msg1, sizeof(message_1_t));
-    persist_write_data(0x21, &msg2, sizeof(message_2_t));
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
-  }
-  
-  if( index == -1 || index == 2 )
-  {
-    strcpy(msg1.scroll_text,scroll_text[2]);
-    msg1.header_time = header_time[2];
-    strcpy(msg2.from_text,from_text[2]);
-    strcpy(msg2.subject_text,subject_text[2]);
-    strcpy(msg1.uuid_text,uuid_text[2]);
-    msg1.account_id = account_id[2];
-    msg1.deleted = deleted[2];
-    persist_write_data(0x30, &msg1, sizeof(message_1_t));
-    persist_write_data(0x31, &msg2, sizeof(message_2_t));
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
-  }
-  
-  if( index == -1 || index == 3 )
-  {
-    strcpy(msg1.scroll_text,scroll_text[3]);
-    msg1.header_time = header_time[3];
-    strcpy(msg2.from_text,from_text[3]);
-    strcpy(msg2.subject_text,subject_text[3]);
-    strcpy(msg1.uuid_text,uuid_text[3]);
-    msg1.account_id = account_id[3];
-    msg1.deleted = deleted[3];
-    persist_write_data(0x40, &msg1, sizeof(message_1_t));
-    persist_write_data(0x41, &msg2, sizeof(message_2_t));
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
-  }
-  
-  if( index == -1 || index == 4 )
-  {
-    strcpy(msg1.scroll_text,scroll_text[4]);
-    msg1.header_time = header_time[4];
-    strcpy(msg2.from_text,from_text[4]);
-    strcpy(msg2.subject_text,subject_text[4]);
-    strcpy(msg1.uuid_text,uuid_text[4]);
-    msg1.account_id = account_id[4];
-    msg1.deleted = deleted[4];
-    persist_write_data(0x50, &msg1, sizeof(message_1_t));
-    persist_write_data(0x51, &msg2, sizeof(message_2_t));
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
-  }
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting complete.");
-}
-
-//
-// Handle AppMessage
-//
-
-void out_sent_handler(DictionaryIterator *sent, void *context) {
-   // outgoing message was delivered
-   APP_LOG(APP_LOG_LEVEL_DEBUG, "Outgoing message was delivered successfully.");
-
-}
-
-
-void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-   // outgoing message failed
-   APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to send outgoing message: %d",reason);
-   switch(reason)
-     {
-     case APP_MSG_ALREADY_RELEASED:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Already Released");
-     break;
-     
-     case APP_MSG_BUFFER_OVERFLOW:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Buffer Overflow");
-     break;
-     
-     case APP_MSG_BUSY:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Busy");
-     break;
-     
-     case APP_MSG_INVALID_ARGS:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Invalid Args");
-     break;
-     
-     case APP_MSG_NOT_CONNECTED:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Not Connected");
-     break;
-     
-    case APP_MSG_OUT_OF_MEMORY:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Out of Memory");
-     break;
-     
-     case APP_MSG_SEND_REJECTED:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send Rejected");
-     break;
-     
-     case APP_MSG_SEND_TIMEOUT:
-     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send Timeout");
-     break;
-     
-     default:
-     break;
-   }
 }
 
 void refresh_screen() {
@@ -363,6 +230,206 @@ void refresh_screen() {
         writeIndex++;
       }
     }  
+}
+
+void persist_messages(int8_t index)
+{
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting current messages for index %d...",index);
+  message_1_t msg1;
+  message_2_t msg2;
+  
+  strcpy(msg1.scroll_text,"");
+  strcpy(msg2.from_text,"");
+  strcpy(msg2.subject_text,"");
+  strcpy(msg1.uuid_text,"");
+  
+  if( index == -1 || index == 0 )
+  {
+    strcpy(msg1.scroll_text,scroll_text[0]);
+    msg1.header_time = header_time[0];
+    strcpy(msg2.from_text,from_text[0]);
+    strcpy(msg2.subject_text,subject_text[0]);
+    strcpy(msg1.uuid_text,uuid_text[0]);
+    msg1.account_id = account_id[0];
+    msg1.deleted = deleted[0];
+    persist_write_data(0x10, &msg1, sizeof(message_1_t));
+    persist_write_data(0x11, &msg2, sizeof(message_2_t));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
+  }
+  
+  if( index == -1 || index == 1 )
+  {
+    strcpy(msg1.scroll_text,scroll_text[1]);
+    msg1.header_time = header_time[1];
+    strcpy(msg2.from_text,from_text[1]);
+    strcpy(msg2.subject_text,subject_text[1]);
+    strcpy(msg1.uuid_text,uuid_text[1]);
+    msg1.account_id = account_id[1];
+    msg1.deleted = deleted[1];
+    persist_write_data(0x20, &msg1, sizeof(message_1_t));
+    persist_write_data(0x21, &msg2, sizeof(message_2_t));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
+  }
+  
+  if( index == -1 || index == 2 )
+  {
+    strcpy(msg1.scroll_text,scroll_text[2]);
+    msg1.header_time = header_time[2];
+    strcpy(msg2.from_text,from_text[2]);
+    strcpy(msg2.subject_text,subject_text[2]);
+    strcpy(msg1.uuid_text,uuid_text[2]);
+    msg1.account_id = account_id[2];
+    msg1.deleted = deleted[2];
+    persist_write_data(0x30, &msg1, sizeof(message_1_t));
+    persist_write_data(0x31, &msg2, sizeof(message_2_t));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
+  }
+  
+  if( index == -1 || index == 3 )
+  {
+    strcpy(msg1.scroll_text,scroll_text[3]);
+    msg1.header_time = header_time[3];
+    strcpy(msg2.from_text,from_text[3]);
+    strcpy(msg2.subject_text,subject_text[3]);
+    strcpy(msg1.uuid_text,uuid_text[3]);
+    msg1.account_id = account_id[3];
+    msg1.deleted = deleted[3];
+    persist_write_data(0x40, &msg1, sizeof(message_1_t));
+    persist_write_data(0x41, &msg2, sizeof(message_2_t));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
+  }
+  
+  if( index == -1 || index == 4 )
+  {
+    strcpy(msg1.scroll_text,scroll_text[4]);
+    msg1.header_time = header_time[4];
+    strcpy(msg2.from_text,from_text[4]);
+    strcpy(msg2.subject_text,subject_text[4]);
+    strcpy(msg1.uuid_text,uuid_text[4]);
+    msg1.account_id = account_id[4];
+    msg1.deleted = deleted[4];
+    persist_write_data(0x50, &msg1, sizeof(message_1_t));
+    persist_write_data(0x51, &msg2, sizeof(message_2_t));
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message with subject: %s",msg2.subject_text);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Saved message text: %s",msg1.scroll_text);
+  }
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Persisting complete.");
+}
+
+//
+// Handle AppMessage
+//
+
+void out_sent_handler(DictionaryIterator *sent, void *context) {
+   // outgoing message was delivered
+   APP_LOG(APP_LOG_LEVEL_DEBUG, "Outgoing message was delivered successfully.");
+   retries = 0;
+   actions_enabled = 1;
+   show_actionbar(action_bar);
+  
+   if( msg_cmd == VAL_CMD_DELETE )
+   {
+     deleted[msg_send_index] = 1;
+     persist_messages(msg_send_index);
+     refresh_screen();
+   }
+}
+
+
+void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
+   // outgoing message failed
+   APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to send outgoing message: %d",reason);
+   switch(reason)
+     {
+     case APP_MSG_ALREADY_RELEASED:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Already Released");
+     break;
+     
+     case APP_MSG_BUFFER_OVERFLOW:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Buffer Overflow");
+     break;
+     
+     case APP_MSG_BUSY:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Busy");
+     if( retries < 3 )
+     {
+       retries++;
+       
+       DictionaryIterator *iter;
+       app_message_outbox_begin(&iter);
+       Tuplet value = TupletInteger(KEY_CMD, msg_cmd);
+       dict_write_tuplet(iter, &value);
+       Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, msg_account);
+       dict_write_tuplet(iter, &acct);
+       Tuplet msg = TupletCString(KEY_MSG_UUID, &msg_uuid[0]);
+       dict_write_tuplet(iter,&msg);
+       app_message_outbox_send();
+       return;
+     }
+     break;
+     
+     case APP_MSG_INVALID_ARGS:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Invalid Args");
+     break;
+     
+     case APP_MSG_NOT_CONNECTED:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Not Connected");
+     break;
+     
+    case APP_MSG_OUT_OF_MEMORY:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Out of Memory");
+     break;
+     
+     case APP_MSG_SEND_REJECTED:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send Rejected");
+     if( retries < 3 )
+     {
+       retries++;
+       
+       DictionaryIterator *iter;
+       app_message_outbox_begin(&iter);
+       Tuplet value = TupletInteger(KEY_CMD, msg_cmd);
+       dict_write_tuplet(iter, &value);
+       Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, msg_account);
+       dict_write_tuplet(iter, &acct);
+       Tuplet msg = TupletCString(KEY_MSG_UUID, &msg_uuid[0]);
+       dict_write_tuplet(iter,&msg);
+       app_message_outbox_send();
+       return;
+     }
+
+     break;
+     
+     case APP_MSG_SEND_TIMEOUT:
+     APP_LOG(APP_LOG_LEVEL_DEBUG, "Send Timeout");
+     if( retries < 3 )
+     {
+       retries++;
+       
+       DictionaryIterator *iter;
+       app_message_outbox_begin(&iter);
+       Tuplet value = TupletInteger(KEY_CMD, msg_cmd);
+       dict_write_tuplet(iter, &value);
+       Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, msg_account);
+       dict_write_tuplet(iter, &acct);
+       Tuplet msg = TupletCString(KEY_MSG_UUID, &msg_uuid[0]);
+       dict_write_tuplet(iter,&msg);
+       app_message_outbox_send();
+       return;
+     }
+
+     break;
+     
+     default:
+     break;
+   }
+   retries = 0;
+   actions_enabled = 1;
+   show_actionbar(action_bar);
 }
 
 void in_received_handler(DictionaryIterator *iter, void *context) {
@@ -480,6 +547,9 @@ void in_dropped_handler(AppMessageResult reason, void *context) {
 //
 void back_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   
+  if( actions_enabled == 0 )
+    return;
+  
   layer_set_hidden(text_layer_get_layer(deleteConfirmLayer), true);
   if( mode == MODE_SCROLL && app_metadata.actions_enabled == 1 )
   {
@@ -511,6 +581,9 @@ void back_single_click_handler(ClickRecognizerRef recognizer, void *context) {
 void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   Window *window = (Window *)context; // This context defaults to the window, but may be changed with \ref window_set_click_context.
   reschedule_kill_timer();
+  
+  if( actions_enabled == 0 )
+    return;
   
   if( mode == MODE_SCROLL )
   {
@@ -546,6 +619,13 @@ void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
          toSend = MAX_MESSAGES-1;
      }
 
+     actions_enabled = 0;
+     hide_actionbar(action_bar);
+     msg_cmd = VAL_CMD_DELETE;
+     msg_account = (int32_t)account_id[toSend];
+     strcpy(msg_uuid,uuid_text[toSend]);
+     msg_send_index = toSend;
+
      DictionaryIterator *iter;
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_REPLY2);
@@ -570,6 +650,9 @@ void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
 void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   Window *window = (Window *)context; // This context defaults to the window, but may be changed with \ref window_set_click_context.
   reschedule_kill_timer();
+  
+  if( actions_enabled == 0 )
+    return;
   
   if( mode == MODE_SCROLL )
   {
@@ -603,6 +686,13 @@ void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
          toSend = MAX_MESSAGES-1;
      }
 
+     actions_enabled = 0;
+     hide_actionbar(action_bar);
+     msg_cmd = VAL_CMD_DELETE;
+     msg_account = (int32_t)account_id[toSend];
+     strcpy(msg_uuid,uuid_text[toSend]);
+     msg_send_index = toSend;
+
      DictionaryIterator *iter;
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_REPLY1);
@@ -626,6 +716,9 @@ void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   reschedule_kill_timer();
+  
+  if( actions_enabled == 0 )
+    return;
   
   GRect scrollFrame = layer_get_frame(scroll_layer_get_layer(scroll_layer));
   GPoint current = scroll_layer_get_content_offset(scroll_layer);
@@ -651,6 +744,13 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   else if( mode == MODE_ACTION )
   {
     // POST OPEN TO PHONE
+     actions_enabled = 0;
+     hide_actionbar(action_bar);
+     msg_cmd = VAL_CMD_DELETE;
+     msg_account = (int32_t)account_id[toSend];
+     strcpy(msg_uuid,uuid_text[toSend]);
+     msg_send_index = toSend;
+
      DictionaryIterator *iter;
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_OPEN);
@@ -664,6 +764,13 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   else
   {
      // POST DELETE TO PHONE  
+     actions_enabled = 0;
+     hide_actionbar(action_bar);
+     msg_cmd = VAL_CMD_DELETE;
+     msg_account = (int32_t)account_id[toSend];
+     strcpy(msg_uuid,uuid_text[toSend]);
+     msg_send_index = toSend;
+
      DictionaryIterator *iter;
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_DELETE);
@@ -674,10 +781,6 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      dict_write_tuplet(iter,&msg);
      app_message_outbox_send();
     
-     deleted[toSend] = 1;
-     persist_messages(toSend);
-     refresh_screen();
-
     // Go back to standard scroll mode
     layer_set_hidden(text_layer_get_layer(deleteConfirmLayer), true);
     mode = MODE_SCROLL;
@@ -803,6 +906,9 @@ void load_messages()
 //
 static void do_init(void) {
 
+  actions_enabled = 1;
+  retries = 0;
+  
   if( persist_exists(0x0) )
   {
     persist_read_data(0x0, &app_metadata, sizeof(app_data_t));
