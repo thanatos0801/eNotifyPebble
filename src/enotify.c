@@ -10,6 +10,7 @@
 Window *window; // All apps must have at least one window
 
 static AppTimer* kill_timer;
+static AppTimer* error_hide_timer;
 
 // All the UI layers
 static ActionBarLayer *action_bar;
@@ -25,6 +26,9 @@ static TextLayer *deleteConfirmLayer;
 static BitmapLayer *trashImageLayer;
 static BitmapLayer *questionImageLayer;
 static TextLayer *pressAgainTextLayer;
+static TextLayer *errorLayer;
+static BitmapLayer *errorImageLayer;
+static TextLayer *errorConfirmationTextLayer;
 
 // All the bitmaps we use
 static GBitmap* upArrow;
@@ -37,6 +41,7 @@ static GBitmap* open;
 static GBitmap* question;
 static GBitmap* bubble;
 static GBitmap* deleted_bubble;
+static GBitmap* error_icon;
 
 // The mode defines what the action bar commands will be and is one of ModeType
 static uint8_t mode;
@@ -87,6 +92,7 @@ enum ModeType {
   MODE_SCROLL = 0x0,
   MODE_ACTION = 0x1,
   MODE_DELETE_CONFIRM = 0x2,
+  MODE_ERROR = 0x3,
 };
 
 enum InMsgType {
@@ -121,6 +127,20 @@ enum VibePatterns {
 //
 // Handle persistent modes
 //
+
+void handle_error_hide_timer(void *data)
+{
+  if( mode == MODE_ERROR )
+  {
+    layer_set_hidden(text_layer_get_layer(errorLayer),true);
+    mode = MODE_SCROLL;
+    
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, upArrow);  
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, downArrow);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, trash);
+  }
+  error_hide_timer = NULL;
+}
 
 void reschedule_kill_timer() {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "Resetting kill timer");
@@ -351,8 +371,10 @@ void out_sent_handler(DictionaryIterator *sent, void *context) {
 
 
 void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context) {
-   // outgoing message failed
+  // outgoing message failed  
    APP_LOG(APP_LOG_LEVEL_DEBUG, "Failed to send outgoing message: %d",reason);
+   text_layer_set_text(errorConfirmationTextLayer, "An unknown error occurred.");
+  
    switch(reason)
      {
      case APP_MSG_ALREADY_RELEASED:
@@ -380,6 +402,10 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
        app_message_outbox_send();
        return;
      }
+     else
+     {
+       text_layer_set_text(errorConfirmationTextLayer, "Too busy to send command.");       
+     }
      break;
      
      case APP_MSG_INVALID_ARGS:
@@ -388,10 +414,12 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
      
      case APP_MSG_NOT_CONNECTED:
      APP_LOG(APP_LOG_LEVEL_DEBUG, "Not Connected");
+     text_layer_set_text(errorConfirmationTextLayer, "Not connected to watch.");
      break;
      
     case APP_MSG_OUT_OF_MEMORY:
      APP_LOG(APP_LOG_LEVEL_DEBUG, "Out of Memory");
+     text_layer_set_text(errorConfirmationTextLayer, "Out of memory.");
      break;
      
      case APP_MSG_SEND_REJECTED:
@@ -410,6 +438,10 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
        dict_write_tuplet(iter,&msg);
        app_message_outbox_send();
        return;
+     }
+     else
+     {
+       text_layer_set_text(errorConfirmationTextLayer, "Message rejected.");
      }
 
      break;
@@ -431,15 +463,23 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
        app_message_outbox_send();
        return;
      }
+     else
+     {
+       text_layer_set_text(errorConfirmationTextLayer, "Message timed out.");  
+     }
 
      break;
      
      default:
      break;
    }
-   retries = 0;
-   actions_enabled = 1;
-   show_actionbar(action_bar);
+  retries = 0;
+  actions_enabled = 1;
+  show_actionbar(action_bar);
+  
+  mode = MODE_ERROR;
+  layer_set_hidden(text_layer_get_layer(errorLayer), false);
+  error_hide_timer = app_timer_register(3*1000, handle_error_hide_timer, NULL);
 }
 
 void in_received_handler(DictionaryIterator *iter, void *context) {
@@ -561,6 +601,8 @@ void back_single_click_handler(ClickRecognizerRef recognizer, void *context) {
     return;
   
   layer_set_hidden(text_layer_get_layer(deleteConfirmLayer), true);
+  layer_set_hidden(text_layer_get_layer(errorLayer), true);
+  
   if( mode == MODE_SCROLL && app_metadata.actions_enabled == 1 )
   {
     reschedule_kill_timer();
@@ -649,6 +691,7 @@ void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   else
   {
     layer_set_hidden(text_layer_get_layer(deleteConfirmLayer), true);
+    layer_set_hidden(text_layer_get_layer(errorLayer), true);
     mode = MODE_SCROLL;
     
     action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, upArrow);  
@@ -716,6 +759,7 @@ void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
   else
   {
     layer_set_hidden(text_layer_get_layer(deleteConfirmLayer), true);
+    layer_set_hidden(text_layer_get_layer(errorLayer), true);
     mode = MODE_SCROLL;
     
     action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, upArrow);  
@@ -771,6 +815,15 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      dict_write_tuplet(iter,&msg);
      app_message_outbox_send();
   }
+  else if( mode == MODE_ERROR )
+  {
+    layer_set_hidden(text_layer_get_layer(errorLayer), true);
+    mode = MODE_SCROLL;
+    
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_UP, upArrow);  
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_DOWN, downArrow);
+    action_bar_layer_set_icon(action_bar, BUTTON_ID_SELECT, trash);
+  }
   else
   {
      // POST DELETE TO PHONE  
@@ -808,7 +861,6 @@ void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, middle_single_click_handler);
   window_single_click_subscribe(BUTTON_ID_BACK, back_single_click_handler);
 }
-
 
 void handle_kill_timer(void *data)
 {
@@ -1078,6 +1130,25 @@ static void do_init(void) {
   layer_add_child(text_layer_get_layer(deleteConfirmLayer), bitmap_layer_get_layer(questionImageLayer));
   layer_add_child(root_layer, text_layer_get_layer(deleteConfirmLayer));
   
+  errorLayer = text_layer_create(GRect((bounds.size.w/2)-45,(bounds.size.h/2)-45,70,90));
+  text_layer_set_background_color(errorLayer, GColorBlack);
+  layer_set_hidden(text_layer_get_layer(errorLayer), true);
+  
+  error_icon = gbitmap_create_with_resource(RESOURCE_ID_ERROR_ICON_WHITE);
+  errorImageLayer = bitmap_layer_create(GRect(28,5,15,15));
+  bitmap_layer_set_bitmap(errorImageLayer, error_icon);
+  
+  errorConfirmationTextLayer = text_layer_create(GRect(2,25,66,60));
+  text_layer_set_background_color(errorConfirmationTextLayer, GColorBlack);
+  text_layer_set_text_color(errorConfirmationTextLayer, GColorWhite);
+  text_layer_set_font(errorConfirmationTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text(errorConfirmationTextLayer, "An error occurred.");
+  text_layer_set_text_alignment(errorConfirmationTextLayer, GTextAlignmentCenter);
+
+  layer_add_child(text_layer_get_layer(errorLayer), text_layer_get_layer(errorConfirmationTextLayer));
+  layer_add_child(text_layer_get_layer(errorLayer), bitmap_layer_get_layer(errorImageLayer));
+  layer_add_child(root_layer, text_layer_get_layer(errorLayer));
+  
   app_message_register_inbox_received(in_received_handler);
   app_message_register_inbox_dropped(in_dropped_handler);
   app_message_register_outbox_sent(out_sent_handler);
@@ -1125,6 +1196,10 @@ static void do_deinit(void) {
   bitmap_layer_destroy(questionImageLayer);
   text_layer_destroy(deleteConfirmLayer);
   text_layer_destroy(pressAgainTextLayer);
+  text_layer_destroy(errorLayer);
+  bitmap_layer_destroy(errorImageLayer);
+  text_layer_destroy(errorConfirmationTextLayer);
+
   
   gbitmap_destroy(upArrow);
   gbitmap_destroy(downArrow);
@@ -1136,6 +1211,7 @@ static void do_deinit(void) {
   gbitmap_destroy(trashWhite);
   gbitmap_destroy(bubble);
   gbitmap_destroy(deleted_bubble);
+  gbitmap_destroy(error_icon);
   
   if( kill_timer )
   {
@@ -1161,4 +1237,5 @@ int main(void) {
   app_event_loop();
   do_deinit();
 }
+
 

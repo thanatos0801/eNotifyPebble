@@ -9,6 +9,11 @@
     "resources": {
         "media": [
             {
+                "file": "images/error_icon.png",
+                "name": "ERROR_ICON",
+                "type": "png-trans"
+            },
+            {
                 "file": "images/deleted.png",
                 "name": "DELETED",
                 "type": "png-trans"
