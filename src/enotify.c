@@ -49,7 +49,7 @@ static uint8_t mode;
 static uint8_t actions_enabled;
 static uint8_t retries;
 static int msg_cmd;
-static int msg_account;
+static uint32_t msg_account;
 static char msg_uuid[MAX_TEXT_LENGTH];
 static int msg_send_index;
 
@@ -583,6 +583,9 @@ void in_received_handler(DictionaryIterator *iter, void *context) {
       case VIBE_PATTERN_DOUBLE:
       vibes_double_pulse();
       break;
+      
+      default:
+      break;
     }
   }
     
@@ -674,7 +677,7 @@ void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      actions_enabled = 0;
      hide_actionbar(action_bar);
      msg_cmd = VAL_CMD_DELETE;
-     msg_account = (int32_t)account_id[toSend];
+     msg_account = (uint32_t)account_id[toSend];
      strcpy(msg_uuid,uuid_text[toSend]);
      msg_send_index = toSend;
 
@@ -682,7 +685,7 @@ void down_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_REPLY2);
      dict_write_tuplet(iter, &value);
-     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (int32_t)account_id[toSend]);
+     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (uint32_t)account_id[toSend]);
      dict_write_tuplet(iter, &acct);
      Tuplet msg = TupletCString(KEY_MSG_UUID, uuid_text[toSend]);
      dict_write_tuplet(iter,&msg);
@@ -742,7 +745,7 @@ void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      actions_enabled = 0;
      hide_actionbar(action_bar);
      msg_cmd = VAL_CMD_DELETE;
-     msg_account = (int32_t)account_id[toSend];
+     msg_account = (uint32_t)account_id[toSend];
      strcpy(msg_uuid,uuid_text[toSend]);
      msg_send_index = toSend;
 
@@ -750,7 +753,7 @@ void up_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_REPLY1);
      dict_write_tuplet(iter, &value);
-     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (int32_t)account_id[toSend]);
+     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (uint32_t)account_id[toSend]);
      dict_write_tuplet(iter, &acct);
      Tuplet msg = TupletCString(KEY_MSG_UUID, uuid_text[toSend]);
      dict_write_tuplet(iter,&msg);
@@ -801,7 +804,7 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      actions_enabled = 0;
      hide_actionbar(action_bar);
      msg_cmd = VAL_CMD_DELETE;
-     msg_account = (int32_t)account_id[toSend];
+     msg_account = (uint32_t)account_id[toSend];
      strcpy(msg_uuid,uuid_text[toSend]);
      msg_send_index = toSend;
 
@@ -809,7 +812,7 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_OPEN);
      dict_write_tuplet(iter, &value);
-     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (int32_t)account_id[toSend]);
+     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (uint32_t)account_id[toSend]);
      dict_write_tuplet(iter, &acct);
      Tuplet msg = TupletCString(KEY_MSG_UUID, uuid_text[toSend]);
      dict_write_tuplet(iter,&msg);
@@ -830,7 +833,7 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      actions_enabled = 0;
      hide_actionbar(action_bar);
      msg_cmd = VAL_CMD_DELETE;
-     msg_account = (int32_t)account_id[toSend];
+     msg_account = (uint32_t)account_id[toSend];
      strcpy(msg_uuid,uuid_text[toSend]);
      msg_send_index = toSend;
 
@@ -838,7 +841,7 @@ void middle_single_click_handler(ClickRecognizerRef recognizer, void *context) {
      app_message_outbox_begin(&iter);
      Tuplet value = TupletInteger(KEY_CMD, VAL_CMD_DELETE);
      dict_write_tuplet(iter, &value);
-     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (int32_t)account_id[toSend]);
+     Tuplet acct = TupletInteger(KEY_ACCOUNT_ID, (uint32_t)account_id[toSend]);
      dict_write_tuplet(iter, &acct);
      Tuplet msg = TupletCString(KEY_MSG_UUID, uuid_text[toSend]);
      dict_write_tuplet(iter,&msg);
